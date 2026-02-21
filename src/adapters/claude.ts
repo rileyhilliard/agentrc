@@ -1,5 +1,6 @@
 import type { Hook, IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
+import { pushSkillFiles } from './shared.ts';
 
 /**
  * Convert a glob pattern to a regex pattern for grep -qE.
@@ -170,18 +171,7 @@ export const claudeAdapter: Adapter = {
     if (ir.skills.length > 0) {
       nativeFeatures.push('skills');
       for (const skill of ir.skills) {
-        files.push({
-          path: `.claude/skills/${skill.name}/SKILL.md`,
-          content: `${skill.content.trim()}\n`,
-        });
-
-        // Supporting files go in the same directory
-        for (const [fileName, fileContent] of Object.entries(skill.files)) {
-          files.push({
-            path: `.claude/skills/${skill.name}/${fileName}`,
-            content: fileContent,
-          });
-        }
+        pushSkillFiles(files, skill, '.claude');
       }
     }
 

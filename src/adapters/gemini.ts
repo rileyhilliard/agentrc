@@ -1,6 +1,11 @@
 import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
-import { renderDescriptionRule, renderGlobRule, renderHooksSection } from './shared.ts';
+import {
+  pushSkillFiles,
+  renderDescriptionRule,
+  renderGlobRule,
+  renderHooksSection,
+} from './shared.ts';
 
 /**
  * Gemini CLI adapter.
@@ -54,18 +59,7 @@ export const geminiAdapter: Adapter = {
     if (ir.skills.length > 0) {
       nativeFeatures.push('skills');
       for (const skill of ir.skills) {
-        files.push({
-          path: `.gemini/skills/${skill.name}/SKILL.md`,
-          content: `${skill.content.trim()}\n`,
-        });
-
-        // Supporting files go in the same directory
-        for (const [fileName, fileContent] of Object.entries(skill.files)) {
-          files.push({
-            path: `.gemini/skills/${skill.name}/${fileName}`,
-            content: fileContent,
-          });
-        }
+        pushSkillFiles(files, skill, '.gemini');
       }
     }
 

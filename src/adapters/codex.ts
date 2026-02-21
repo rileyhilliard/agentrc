@@ -1,6 +1,11 @@
 import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
-import { renderDescriptionRule, renderGlobRule, renderHooksSection } from './shared.ts';
+import {
+  pushSkillFiles,
+  renderDescriptionRule,
+  renderGlobRule,
+  renderHooksSection,
+} from './shared.ts';
 
 /**
  * Codex (OpenAI) adapter.
@@ -56,18 +61,7 @@ export const codexAdapter: Adapter = {
 
     // Skills get native support as .agents/skills/{name}/SKILL.md
     for (const skill of ir.skills) {
-      files.push({
-        path: `.agents/skills/${skill.name}/SKILL.md`,
-        content: `${skill.content.trim()}\n`,
-      });
-
-      // Supporting files go in the same directory
-      for (const [fileName, fileContent] of Object.entries(skill.files)) {
-        files.push({
-          path: `.agents/skills/${skill.name}/${fileName}`,
-          content: fileContent,
-        });
-      }
+      pushSkillFiles(files, skill, '.agents');
     }
 
     return { files, warnings, nativeFeatures, degradedFeatures };

@@ -1,5 +1,6 @@
 import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
+import { pushSkillFiles } from './shared.ts';
 
 /**
  * Cursor adapter.
@@ -90,18 +91,7 @@ export const cursorAdapter: Adapter = {
     if (ir.skills.length > 0) {
       nativeFeatures.push('skills');
       for (const skill of ir.skills) {
-        files.push({
-          path: `.cursor/skills/${skill.name}/SKILL.md`,
-          content: `${skill.content.trim()}\n`,
-        });
-
-        // Supporting files
-        for (const [fileName, fileContent] of Object.entries(skill.files)) {
-          files.push({
-            path: `.cursor/skills/${skill.name}/${fileName}`,
-            content: fileContent,
-          });
-        }
+        pushSkillFiles(files, skill, '.cursor');
       }
     }
 
