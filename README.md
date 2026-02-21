@@ -148,7 +148,9 @@ See the full [configuration reference](docs/configuration.md).
 | Amp | native | degraded | degraded | - | degraded | - | `AGENTS.md` |
 | Roo | native | degraded | degraded | - | degraded | - | `AGENTS.md` |
 
-**native** = uses the platform's built-in mechanism. **degraded** = folded into text instructions. **-** = not supported by the platform, skipped.
+- **native** = uses the platform's built-in mechanism.
+- **degraded** = folded into text instructions.
+- **-** = not supported by the platform, skipped.
 
 See [adapters](docs/adapters.md) for per-platform details.
 
