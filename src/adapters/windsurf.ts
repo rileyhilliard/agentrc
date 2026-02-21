@@ -1,14 +1,8 @@
-import type { IR, Rule } from '../core/ir.ts';
+import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
 
 const RULE_CHAR_LIMIT = 6_000;
 const TOTAL_CHAR_LIMIT = 12_000;
-
-/** Sort rules by priority: critical -> high -> normal -> low */
-function sortByPriority(rules: Rule[]): Rule[] {
-  const order = { critical: 0, high: 1, normal: 2, low: 3 };
-  return [...rules].sort((a, b) => order[a.priority] - order[b.priority]);
-}
 
 /**
  * Windsurf adapter.
@@ -27,7 +21,7 @@ export const windsurfAdapter: Adapter = {
     const nativeFeatures: string[] = ['instructions', 'scoped-rules'];
     const degradedFeatures: string[] = [];
 
-    const sorted = sortByPriority(ir.rules);
+    const sorted = ir.rules;
     let totalChars = 0;
 
     for (const rule of sorted) {
@@ -36,8 +30,11 @@ export const windsurfAdapter: Adapter = {
       if (rule.scope === 'glob' && rule.globs && rule.globs.length > 0) {
         const globsYaml = rule.globs.map((g) => `  - "${g}"`).join('\n');
         frontmatter = `---\ntrigger: glob\nglobs:\n${globsYaml}\n---`;
+      } else if (rule.scope === 'description' && rule.description) {
+        // Description-triggered rules use model decision trigger
+        frontmatter = `---\ntrigger: model\ndescription: "${rule.description}"\n---`;
       } else {
-        // alwaysApply, manual, description-triggered all become always_on
+        // alwaysApply, manual all become always_on
         frontmatter = '---\ntrigger: always_on\n---';
       }
 
@@ -66,10 +63,10 @@ export const windsurfAdapter: Adapter = {
       });
     }
 
-    // Description-triggered rules get folded since Windsurf doesn't support description triggers
+    // Description-triggered rules use trigger: model natively
     const descRules = sorted.filter((r) => r.scope === 'description');
     if (descRules.length > 0) {
-      degradedFeatures.push('description-triggered rules (converted to always_on)');
+      nativeFeatures.push('description-triggered-rules');
     }
 
     // Degrade hooks and commands into a conventions file
@@ -88,23 +85,6 @@ export const windsurfAdapter: Adapter = {
           conventionSections.push('');
           conventionSections.push(`Command: \`${hook.run}\``);
         }
-        conventionSections.push('');
-      }
-    }
-
-    if (ir.commands.length > 0) {
-      degradedFeatures.push('commands (folded into conventions file)');
-      conventionSections.push('## Workflows');
-      conventionSections.push('');
-      for (const cmd of ir.commands) {
-        const aliases = cmd.aliases?.length ? ` (aliases: ${cmd.aliases.join(', ')})` : '';
-        conventionSections.push(`### ${cmd.name}${aliases}`);
-        conventionSections.push('');
-        if (cmd.description) {
-          conventionSections.push(cmd.description);
-          conventionSections.push('');
-        }
-        conventionSections.push(cmd.content);
         conventionSections.push('');
       }
     }

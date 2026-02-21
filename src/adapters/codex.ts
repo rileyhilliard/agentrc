@@ -1,11 +1,6 @@
-import type { IR, Rule } from '../core/ir.ts';
+import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
-
-/** Sort rules by priority: critical -> high -> normal -> low */
-function sortByPriority(rules: Rule[]): Rule[] {
-  const order = { critical: 0, high: 1, normal: 2, low: 3 };
-  return [...rules].sort((a, b) => order[a.priority] - order[b.priority]);
-}
+import { renderDescriptionRule, renderGlobRule, renderHooksSection } from './shared.ts';
 
 /**
  * Codex (OpenAI) adapter.
@@ -13,7 +8,7 @@ function sortByPriority(rules: Rule[]): Rule[] {
  * Generates:
  * - AGENTS.md with all rules (glob-scoped get file-path annotations)
  * - .agents/skills/{name}/SKILL.md for each skill
- * - Hooks and commands degrade to text in AGENTS.md
+ * - Hooks degrade to text in AGENTS.md
  */
 export const codexAdapter: Adapter = {
   name: 'codex',
@@ -24,7 +19,7 @@ export const codexAdapter: Adapter = {
     const degradedFeatures: string[] = [];
 
     const sections: string[] = [];
-    const sorted = sortByPriority(ir.rules);
+    const sorted = ir.rules;
 
     // Always-apply and manual rules
     const alwaysRules = sorted.filter((r) => r.scope === 'always' || r.scope === 'manual');
@@ -38,10 +33,7 @@ export const codexAdapter: Adapter = {
       degradedFeatures.push('scoped-rules (folded into instructions with file-path annotations)');
     }
     for (const rule of globRules) {
-      const globList = rule.globs?.join(', ') ?? '';
-      sections.push(
-        `### ${rule.name}\n\nWhen working on files matching \`${globList}\`:\n\n${rule.content}`,
-      );
+      sections.push(renderGlobRule(rule));
     }
 
     // Description-triggered rules
@@ -50,44 +42,13 @@ export const codexAdapter: Adapter = {
       degradedFeatures.push('description-triggered rules (folded into instructions)');
     }
     for (const rule of descRules) {
-      const desc = rule.description ? ` (${rule.description})` : '';
-      sections.push(`### ${rule.name}${desc}\n\n${rule.content}`);
+      sections.push(renderDescriptionRule(rule));
     }
 
     // Hooks degrade to text
     if (ir.hooks.length > 0) {
       degradedFeatures.push('hooks (folded into behavioral instructions)');
-      const hookLines = ['## Hooks', ''];
-      for (const hook of ir.hooks) {
-        const matchInfo = hook.match ? ` on files matching \`${hook.match}\`` : '';
-        hookLines.push(`### ${hook.event}${matchInfo}`);
-        hookLines.push('');
-        hookLines.push(hook.description || `Run: \`${hook.run}\``);
-        if (hook.description && hook.run) {
-          hookLines.push('');
-          hookLines.push(`Command: \`${hook.run}\``);
-        }
-        hookLines.push('');
-      }
-      sections.push(hookLines.join('\n'));
-    }
-
-    // Commands degrade to text
-    if (ir.commands.length > 0) {
-      degradedFeatures.push('commands (folded into workflows section)');
-      const cmdLines = ['## Workflows', ''];
-      for (const cmd of ir.commands) {
-        const aliases = cmd.aliases?.length ? ` (aliases: ${cmd.aliases.join(', ')})` : '';
-        cmdLines.push(`### ${cmd.name}${aliases}`);
-        cmdLines.push('');
-        if (cmd.description) {
-          cmdLines.push(cmd.description);
-          cmdLines.push('');
-        }
-        cmdLines.push(cmd.content);
-        cmdLines.push('');
-      }
-      sections.push(cmdLines.join('\n'));
+      sections.push(renderHooksSection(ir.hooks));
     }
 
     const content = `${sections.join('\n\n').trim()}\n`;

@@ -1,23 +1,18 @@
-import type { IR, Rule } from '../core/ir.ts';
+import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
-
-/** Sort rules by priority: critical -> high -> normal -> low */
-function sortByPriority(rules: Rule[]): Rule[] {
-  const order = { critical: 0, high: 1, normal: 2, low: 3 };
-  return [...rules].sort((a, b) => order[a.priority] - order[b.priority]);
-}
 
 /**
  * Cursor adapter.
  *
  * Generates:
- * - .cursor/rules/{name}/RULE.md: one per rule with Cursor-compatible frontmatter
+ * - .cursor/rules/{name}.mdc: one per rule with Cursor-compatible frontmatter
  *   - alwaysApply rules: `alwaysApply: true`
  *   - Glob-scoped: `globs: "glob1,glob2"`, `alwaysApply: false`
  *   - Description-triggered: `description: "..."`, `alwaysApply: false`
  *   - Manual: no special frontmatter
- * - .cursor/rules/agentrc-hooks/RULE.md: degraded hooks as behavioral instructions
- * - .cursor/rules/agentrc-commands/RULE.md: degraded commands
+ * - .cursor/rules/agentrc-hooks.mdc: degraded hooks as behavioral instructions
+ * - .cursor/commands/{name}.md: one per command (native support)
+ * - .cursor/agents/{name}.md: one per agent (native support)
  */
 export const cursorAdapter: Adapter = {
   name: 'cursor',
@@ -27,7 +22,7 @@ export const cursorAdapter: Adapter = {
     const nativeFeatures: string[] = ['instructions', 'scoped-rules'];
     const degradedFeatures: string[] = [];
 
-    const sorted = sortByPriority(ir.rules);
+    const sorted = ir.rules;
 
     for (const rule of sorted) {
       let frontmatter: string;
@@ -53,7 +48,7 @@ export const cursorAdapter: Adapter = {
 
       const content = `${frontmatter}\n\n${rule.content.trim()}\n`;
       files.push({
-        path: `.cursor/rules/${rule.name}/RULE.md`,
+        path: `.cursor/rules/${rule.name}.mdc`,
         content,
       });
     }
@@ -75,31 +70,20 @@ export const cursorAdapter: Adapter = {
       }
 
       files.push({
-        path: '.cursor/rules/agentrc-hooks/RULE.md',
+        path: '.cursor/rules/agentrc-hooks.mdc',
         content: `---\nalwaysApply: true\n---\n\n${hookLines.join('\n').trim()}\n`,
       });
     }
 
-    // Commands degrade to a description-triggered rule
+    // Commands get native support
     if (ir.commands.length > 0) {
-      degradedFeatures.push('commands (folded into description-triggered rule)');
-      const cmdLines = ['# Available Commands and Workflows', ''];
+      nativeFeatures.push('commands');
       for (const cmd of ir.commands) {
-        const aliases = cmd.aliases?.length ? ` (aliases: ${cmd.aliases.join(', ')})` : '';
-        cmdLines.push(`## ${cmd.name}${aliases}`);
-        cmdLines.push('');
-        if (cmd.description) {
-          cmdLines.push(cmd.description);
-          cmdLines.push('');
-        }
-        cmdLines.push(cmd.content);
-        cmdLines.push('');
+        files.push({
+          path: `.cursor/commands/${cmd.name}.md`,
+          content: `${cmd.content.trim()}\n`,
+        });
       }
-
-      files.push({
-        path: '.cursor/rules/agentrc-commands/RULE.md',
-        content: `---\ndescription: "Available commands and workflows"\nalwaysApply: false\n---\n\n${cmdLines.join('\n').trim()}\n`,
-      });
     }
 
     // Skills get native support
@@ -118,6 +102,25 @@ export const cursorAdapter: Adapter = {
             content: fileContent,
           });
         }
+      }
+    }
+
+    // Agents get native support
+    if (ir.agents.length > 0) {
+      nativeFeatures.push('agents');
+      for (const agent of ir.agents) {
+        const fmLines: string[] = [];
+        if (agent.description) {
+          fmLines.push(`description: "${agent.description}"`);
+        }
+        if (agent.model) {
+          fmLines.push(`model: ${agent.model}`);
+        }
+        const frontmatterBlock = fmLines.length > 0 ? `---\n${fmLines.join('\n')}\n---\n\n` : '';
+        files.push({
+          path: `.cursor/agents/${agent.name}.md`,
+          content: `${frontmatterBlock}${agent.content.trim()}\n`,
+        });
       }
     }
 

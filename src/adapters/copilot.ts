@@ -1,11 +1,6 @@
-import type { IR, Rule } from '../core/ir.ts';
+import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
-
-/** Sort rules by priority: critical -> high -> normal -> low */
-function sortByPriority(rules: Rule[]): Rule[] {
-  const order = { critical: 0, high: 1, normal: 2, low: 3 };
-  return [...rules].sort((a, b) => order[a.priority] - order[b.priority]);
-}
+import { renderHooksSection, renderSkillsSection } from './shared.ts';
 
 /**
  * GitHub Copilot adapter.
@@ -23,7 +18,7 @@ export const copilotAdapter: Adapter = {
     const nativeFeatures: string[] = ['instructions', 'scoped-rules'];
     const degradedFeatures: string[] = [];
 
-    const sorted = sortByPriority(ir.rules);
+    const sorted = ir.rules;
     const mainSections: string[] = [];
 
     // Always-apply rules go into copilot-instructions.md
@@ -57,54 +52,13 @@ export const copilotAdapter: Adapter = {
     // Hooks degrade to text
     if (ir.hooks.length > 0) {
       degradedFeatures.push('hooks (folded into behavioral instructions)');
-      const hookLines = ['## Hooks', ''];
-      for (const hook of ir.hooks) {
-        const matchInfo = hook.match ? ` on files matching \`${hook.match}\`` : '';
-        hookLines.push(`### ${hook.event}${matchInfo}`);
-        hookLines.push('');
-        hookLines.push(hook.description || `Run: \`${hook.run}\``);
-        if (hook.description && hook.run) {
-          hookLines.push('');
-          hookLines.push(`Command: \`${hook.run}\``);
-        }
-        hookLines.push('');
-      }
-      mainSections.push(hookLines.join('\n'));
-    }
-
-    // Commands degrade to text
-    if (ir.commands.length > 0) {
-      degradedFeatures.push('commands (folded into workflows section)');
-      const cmdLines = ['## Workflows', ''];
-      for (const cmd of ir.commands) {
-        const aliases = cmd.aliases?.length ? ` (aliases: ${cmd.aliases.join(', ')})` : '';
-        cmdLines.push(`### ${cmd.name}${aliases}`);
-        cmdLines.push('');
-        if (cmd.description) {
-          cmdLines.push(cmd.description);
-          cmdLines.push('');
-        }
-        cmdLines.push(cmd.content);
-        cmdLines.push('');
-      }
-      mainSections.push(cmdLines.join('\n'));
+      mainSections.push(renderHooksSection(ir.hooks));
     }
 
     // Skills degrade to text
     if (ir.skills.length > 0) {
       degradedFeatures.push('skills (folded into skills section)');
-      const skillLines = ['## Skills', ''];
-      for (const skill of ir.skills) {
-        skillLines.push(`### ${skill.name}`);
-        skillLines.push('');
-        if (skill.description) {
-          skillLines.push(skill.description);
-          skillLines.push('');
-        }
-        skillLines.push(skill.content);
-        skillLines.push('');
-      }
-      mainSections.push(skillLines.join('\n'));
+      mainSections.push(renderSkillsSection(ir.skills));
     }
 
     const mainContent = `${mainSections.join('\n\n').trim()}\n`;

@@ -1,11 +1,5 @@
-import type { IR, Rule } from '../core/ir.ts';
+import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
-
-/** Sort rules by priority: critical -> high -> normal -> low */
-function sortByPriority(rules: Rule[]): Rule[] {
-  const order = { critical: 0, high: 1, normal: 2, low: 3 };
-  return [...rules].sort((a, b) => order[a.priority] - order[b.priority]);
-}
 
 /**
  * Cline adapter.
@@ -14,7 +8,7 @@ function sortByPriority(rules: Rule[]): Rule[] {
  * - .clinerules/{NN}-{name}.md: rule files with numeric prefixes for priority ordering
  *   - Glob-scoped rules use `paths` frontmatter
  *   - Rules without globs have no frontmatter (always active)
- * - .clinerules/00-agentrc-conventions.md: degraded hooks and commands
+ * - .clinerules/00-agentrc-conventions.md: degraded hooks and skills
  */
 export const clineAdapter: Adapter = {
   name: 'cline',
@@ -24,7 +18,7 @@ export const clineAdapter: Adapter = {
     const nativeFeatures: string[] = ['instructions', 'scoped-rules'];
     const degradedFeatures: string[] = [];
 
-    const sorted = sortByPriority(ir.rules);
+    const sorted = ir.rules;
 
     // Assign numeric prefixes starting at 01 (00 reserved for conventions)
     let index = 1;
@@ -64,23 +58,6 @@ export const clineAdapter: Adapter = {
           conventionSections.push('');
           conventionSections.push(`Command: \`${hook.run}\``);
         }
-        conventionSections.push('');
-      }
-    }
-
-    if (ir.commands.length > 0) {
-      degradedFeatures.push('commands (folded into conventions file)');
-      conventionSections.push('## Workflows');
-      conventionSections.push('');
-      for (const cmd of ir.commands) {
-        const aliases = cmd.aliases?.length ? ` (aliases: ${cmd.aliases.join(', ')})` : '';
-        conventionSections.push(`### ${cmd.name}${aliases}`);
-        conventionSections.push('');
-        if (cmd.description) {
-          conventionSections.push(cmd.description);
-          conventionSections.push('');
-        }
-        conventionSections.push(cmd.content);
         conventionSections.push('');
       }
     }

@@ -1,11 +1,5 @@
-import type { Hook, IR, Rule } from '../core/ir.ts';
+import type { Hook, IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
-
-/** Sort rules by priority: critical -> high -> normal -> low */
-function sortByPriority(rules: Rule[]): Rule[] {
-  const order = { critical: 0, high: 1, normal: 2, low: 3 };
-  return [...rules].sort((a, b) => order[a.priority] - order[b.priority]);
-}
 
 /**
  * Convert a glob pattern to a regex pattern for grep -qE.
@@ -76,13 +70,10 @@ function buildHookCommand(hook: Hook): string {
  * Claude Code adapter.
  *
  * The most capable adapter, with native support for:
- * - Instructions (CLAUDE.md)
+ * - Rules (.claude/rules/*.md with optional `paths:` frontmatter)
  * - Hooks (.claude/settings.json)
  * - Commands (.claude/commands/*.md)
  * - Skills (.claude/skills/SKILL.md)
- *
- * Scoped (glob-based) rules are included in CLAUDE.md with file-match annotations
- * rather than in settings.json for v1.
  */
 export const claudeAdapter: Adapter = {
   name: 'claude',
@@ -92,48 +83,38 @@ export const claudeAdapter: Adapter = {
     const nativeFeatures: string[] = ['instructions'];
     const degradedFeatures: string[] = [];
 
-    // --- CLAUDE.md ---
-    const sorted = sortByPriority(ir.rules);
-    const mdSections: string[] = [];
+    // --- .claude/rules/*.md ---
+    const sorted = ir.rules;
 
-    // Always-apply rules (no annotation needed)
-    const alwaysRules = sorted.filter((r) => r.scope === 'always');
-    for (const rule of alwaysRules) {
-      mdSections.push(`### ${rule.name}\n\n${rule.content}`);
+    const hasGlobRules = sorted.some((r) => r.scope === 'glob');
+    if (hasGlobRules) {
+      nativeFeatures.push('scoped-rules');
     }
 
-    // Manual rules
-    const manualRules = sorted.filter((r) => r.scope === 'manual');
-    for (const rule of manualRules) {
-      mdSections.push(`### ${rule.name}\n\n${rule.content}`);
+    const hasDescRules = sorted.some((r) => r.scope === 'description');
+    if (hasDescRules) {
+      degradedFeatures.push('description-triggered rules (converted to always-on rules)');
     }
 
-    // Glob-scoped rules get file-match annotation in CLAUDE.md
-    // (not in settings.json for v1)
-    const globRules = sorted.filter((r) => r.scope === 'glob');
-    if (globRules.length > 0) {
-      degradedFeatures.push('scoped-rules (folded into CLAUDE.md with file-match annotations)');
-    }
-    for (const rule of globRules) {
-      const globList = rule.globs?.join(', ') ?? '';
-      mdSections.push(
-        `### ${rule.name}\n\nWhen working on files matching \`${globList}\`:\n\n${rule.content}`,
-      );
+    const hasManualRules = sorted.some((r) => r.scope === 'manual');
+    if (hasManualRules) {
+      degradedFeatures.push('manual rules (converted to always-on rules)');
     }
 
-    // Description-triggered rules
-    const descRules = sorted.filter((r) => r.scope === 'description');
-    if (descRules.length > 0) {
-      degradedFeatures.push('description-triggered rules (folded into CLAUDE.md)');
-    }
-    for (const rule of descRules) {
-      const desc = rule.description ? ` (${rule.description})` : '';
-      mdSections.push(`### ${rule.name}${desc}\n\n${rule.content}`);
-    }
+    for (const rule of sorted) {
+      let content: string;
 
-    if (mdSections.length > 0) {
-      const claudeMdContent = `${mdSections.join('\n\n').trim()}\n`;
-      files.push({ path: 'CLAUDE.md', content: claudeMdContent });
+      if (rule.scope === 'glob' && rule.globs && rule.globs.length > 0) {
+        const pathsYaml = rule.globs.map((g) => `  - "${g}"`).join('\n');
+        content = `---\npaths:\n${pathsYaml}\n---\n\n${rule.content.trim()}\n`;
+      } else {
+        content = `${rule.content.trim()}\n`;
+      }
+
+      files.push({
+        path: `.claude/rules/${rule.name}.md`,
+        content,
+      });
     }
 
     // --- .claude/settings.json ---
@@ -201,6 +182,28 @@ export const claudeAdapter: Adapter = {
             content: fileContent,
           });
         }
+      }
+    }
+
+    // --- .claude/agents/{name}.md ---
+    if (ir.agents.length > 0) {
+      nativeFeatures.push('agents');
+      for (const agent of ir.agents) {
+        const fmLines = [`description: "${agent.description}"`];
+        if (agent.model) {
+          fmLines.push(`model: ${agent.model}`);
+        }
+        if (agent.tools && agent.tools.length > 0) {
+          fmLines.push('tools:');
+          for (const tool of agent.tools) {
+            fmLines.push(`  - ${tool}`);
+          }
+        }
+        const frontmatter = `---\n${fmLines.join('\n')}\n---`;
+        files.push({
+          path: `.claude/agents/${agent.name}.md`,
+          content: `${frontmatter}\n\n${agent.content.trim()}\n`,
+        });
       }
     }
 
