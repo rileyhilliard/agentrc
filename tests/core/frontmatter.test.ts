@@ -97,6 +97,17 @@ Content after empty frontmatter.`;
     expect(result.content).toBe('Content after empty frontmatter.');
   });
 
+  test('parses manual field', () => {
+    const raw = `---
+manual: true
+---
+
+Some manual-only rule.`;
+
+    const result = parseFrontmatter(raw);
+    expect(result.frontmatter.manual).toBe(true);
+  });
+
   test('parses description field', () => {
     const raw = `---
 description: "Apply for database work"
@@ -138,5 +149,40 @@ Content.`;
       const result = parseFrontmatter(raw);
       expect(result.frontmatter.priority).toBe(priority);
     }
+  });
+
+  test('parses model field as string', () => {
+    const raw = `---
+model: sonnet
+---
+
+Content.`;
+
+    const result = parseFrontmatter(raw);
+    expect(result.frontmatter.model).toBe('sonnet');
+  });
+
+  test('parses tools as array', () => {
+    const raw = `---
+tools:
+  - Read
+  - Bash
+---
+
+Content.`;
+
+    const result = parseFrontmatter(raw);
+    expect(result.frontmatter.tools).toEqual(['Read', 'Bash']);
+  });
+
+  test('normalizes single tool string to array', () => {
+    const raw = `---
+tools: Read
+---
+
+Content.`;
+
+    const result = parseFrontmatter(raw);
+    expect(result.frontmatter.tools).toEqual(['Read']);
   });
 });

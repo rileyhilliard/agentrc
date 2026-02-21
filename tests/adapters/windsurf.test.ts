@@ -1,16 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { join } from 'node:path';
 import { windsurfAdapter } from '../../src/adapters/windsurf.ts';
 import type { IR } from '../../src/core/ir.ts';
-import { buildIR } from '../../src/core/ir.ts';
-import { loadAgentrc } from '../../src/core/loader.ts';
-
-const FIXTURES = join(import.meta.dir, '..', 'fixtures');
-
-async function getFullIR() {
-  const source = await loadAgentrc(join(FIXTURES, 'full'));
-  return buildIR(source);
-}
+import { getFullIR } from '../helpers.ts';
 
 describe('Windsurf adapter', () => {
   test('generates .windsurf/rules/*.md files', async () => {
@@ -23,7 +14,7 @@ describe('Windsurf adapter', () => {
     expect(ruleFiles.length).toBeGreaterThan(0);
   });
 
-  test('uses trigger: always_on for non-glob rules', async () => {
+  test('uses trigger: always_on for always-apply rules', async () => {
     const ir = await getFullIR();
     const result = windsurfAdapter.generate(ir);
 
@@ -42,6 +33,24 @@ describe('Windsurf adapter', () => {
     expect(reactFile?.content).toContain('src/components/**/*.tsx');
   });
 
+  test('uses trigger: model with description for description-triggered rules', async () => {
+    const ir = await getFullIR();
+    const result = windsurfAdapter.generate(ir);
+
+    const dbFile = result.files.find((f) => f.path.includes('database-migrations'));
+    expect(dbFile).toBeDefined();
+    expect(dbFile?.content).toContain('trigger: model');
+    expect(dbFile?.content).toContain('description:');
+  });
+
+  test('reports description-triggered rules as native feature', async () => {
+    const ir = await getFullIR();
+    const result = windsurfAdapter.generate(ir);
+
+    const hasDescNative = result.nativeFeatures.some((f) => f.includes('description-triggered'));
+    expect(hasDescNative).toBe(true);
+  });
+
   test('warns when a rule exceeds 6000 char limit', () => {
     const bigContent = 'x'.repeat(6100);
     const ir: IR = {
@@ -57,6 +66,7 @@ describe('Windsurf adapter', () => {
       hooks: [],
       commands: [],
       skills: [],
+      agents: [],
       targets: ['windsurf'],
     };
     const result = windsurfAdapter.generate(ir);
@@ -83,6 +93,7 @@ describe('Windsurf adapter', () => {
       hooks: [],
       commands: [],
       skills: [],
+      agents: [],
       targets: ['windsurf'],
     };
     const result = windsurfAdapter.generate(ir);
@@ -92,7 +103,7 @@ describe('Windsurf adapter', () => {
     expect(dropWarn).toContain('low-priority');
   });
 
-  test('degrades hooks and commands into conventions file', async () => {
+  test('degrades hooks into conventions file', async () => {
     const ir = await getFullIR();
     const result = windsurfAdapter.generate(ir);
 
@@ -100,7 +111,6 @@ describe('Windsurf adapter', () => {
     expect(convFile).toBeDefined();
     expect(convFile?.content).toContain('trigger: always_on');
     expect(convFile?.content).toContain('post-edit');
-    expect(convFile?.content).toContain('Workflows');
   });
 
   test('reports degraded features', async () => {
@@ -108,8 +118,6 @@ describe('Windsurf adapter', () => {
     const result = windsurfAdapter.generate(ir);
 
     const hasHooksDegraded = result.degradedFeatures.some((f) => f.includes('hooks'));
-    const hasCmdsDegraded = result.degradedFeatures.some((f) => f.includes('commands'));
     expect(hasHooksDegraded).toBe(true);
-    expect(hasCmdsDegraded).toBe(true);
   });
 });

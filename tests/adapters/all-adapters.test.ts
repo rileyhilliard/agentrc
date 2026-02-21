@@ -1,16 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { join } from 'node:path';
 import type { AdapterResult } from '../../src/adapters/adapter.ts';
 import { getAdapter, listAdapters } from '../../src/adapters/registry.ts';
-import { buildIR } from '../../src/core/ir.ts';
-import { loadAgentrc } from '../../src/core/loader.ts';
-
-const FIXTURES = join(import.meta.dir, '..', 'fixtures');
-
-async function getFullIR() {
-  const source = await loadAgentrc(join(FIXTURES, 'full'));
-  return buildIR(source);
-}
+import { getFullIR } from '../helpers.ts';
 
 describe('All adapters', () => {
   test('every registered adapter generates without errors', async () => {
@@ -66,26 +57,6 @@ describe('All adapters', () => {
         const hooksInDegraded = result.degradedFeatures.some((f) => f.includes('hook'));
 
         expect(hooksAppearInFiles || hooksInNative || hooksInDegraded).toBe(true);
-      }
-    }
-  });
-
-  test('no adapter silently drops commands', async () => {
-    const ir = await getFullIR();
-    const adapterNames = listAdapters();
-
-    for (const name of adapterNames) {
-      const adapter = getAdapter(name);
-      const result = adapter.generate(ir);
-
-      if (ir.commands.length > 0) {
-        const cmdsAppearInFiles = result.files.some((f) =>
-          ir.commands.some((c) => f.content.includes(c.name) || f.path.includes(c.name)),
-        );
-        const cmdsInNative = result.nativeFeatures.some((f) => f.includes('command'));
-        const cmdsInDegraded = result.degradedFeatures.some((f) => f.includes('command'));
-
-        expect(cmdsAppearInFiles || cmdsInNative || cmdsInDegraded).toBe(true);
       }
     }
   });

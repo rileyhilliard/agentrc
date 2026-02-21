@@ -1,56 +1,57 @@
 import { describe, expect, test } from 'bun:test';
-import { join } from 'node:path';
 import { claudeAdapter } from '../../src/adapters/claude.ts';
-import { buildIR } from '../../src/core/ir.ts';
-import { loadAgentrc } from '../../src/core/loader.ts';
-
-const FIXTURES = join(import.meta.dir, '..', 'fixtures');
-
-async function getFullIR() {
-  const source = await loadAgentrc(join(FIXTURES, 'full'));
-  return buildIR(source);
-}
+import { getFullIR, getMinimalIR } from '../helpers.ts';
 
 describe('Claude adapter', () => {
-  test('generates CLAUDE.md with alwaysApply rules', async () => {
+  test('generates .claude/rules/*.md for alwaysApply rules (no frontmatter)', async () => {
     const ir = await getFullIR();
     const result = claudeAdapter.generate(ir);
 
-    const claudeMd = result.files.find((f) => f.path === 'CLAUDE.md');
-    expect(claudeMd).toBeDefined();
-
-    // alwaysApply rule content should be present
-    expect(claudeMd?.content).toContain('typescript-strict');
-    expect(claudeMd?.content).toContain('No `any` types');
+    const tsRule = result.files.find((f) => f.path === '.claude/rules/typescript-strict.md');
+    expect(tsRule).toBeDefined();
+    expect(tsRule?.content).toContain('No `any` types');
+    // Always-on rules should have no frontmatter
+    expect(tsRule?.content).not.toContain('---');
   });
 
-  test('includes manual rules in CLAUDE.md', async () => {
+  test('generates .claude/rules/*.md for manual rules (no frontmatter)', async () => {
     const ir = await getFullIR();
     const result = claudeAdapter.generate(ir);
 
-    const claudeMd = result.files.find((f) => f.path === 'CLAUDE.md');
-    expect(claudeMd?.content).toContain('code-style');
-    expect(claudeMd?.content).toContain('Keep functions small and focused');
+    const codeStyle = result.files.find((f) => f.path === '.claude/rules/code-style.md');
+    expect(codeStyle).toBeDefined();
+    expect(codeStyle?.content).toContain('Keep functions small and focused');
+    expect(codeStyle?.content).not.toContain('---');
   });
 
-  test('includes glob-scoped rules with file-match annotations', async () => {
+  test('generates .claude/rules/*.md for glob-scoped rules with paths frontmatter', async () => {
     const ir = await getFullIR();
     const result = claudeAdapter.generate(ir);
 
-    const claudeMd = result.files.find((f) => f.path === 'CLAUDE.md');
-    expect(claudeMd?.content).toContain('react-components');
-    expect(claudeMd?.content).toContain(
-      'When working on files matching `src/components/**/*.tsx, src/pages/**/*.tsx`',
-    );
+    const reactRule = result.files.find((f) => f.path === '.claude/rules/react-components.md');
+    expect(reactRule).toBeDefined();
+    expect(reactRule?.content).toContain('---');
+    expect(reactRule?.content).toContain('paths:');
+    expect(reactRule?.content).toContain('src/components/**/*.tsx');
+    expect(reactRule?.content).toContain('src/pages/**/*.tsx');
   });
 
-  test('includes description-triggered rules in CLAUDE.md', async () => {
+  test('generates .claude/rules/*.md for description-triggered rules (no frontmatter)', async () => {
+    const ir = await getFullIR();
+    const result = claudeAdapter.generate(ir);
+
+    const dbRule = result.files.find((f) => f.path === '.claude/rules/database-migrations.md');
+    expect(dbRule).toBeDefined();
+    // Description-triggered rules degrade to always-on (no frontmatter)
+    expect(dbRule?.content).not.toContain('---');
+  });
+
+  test('does not generate CLAUDE.md', async () => {
     const ir = await getFullIR();
     const result = claudeAdapter.generate(ir);
 
     const claudeMd = result.files.find((f) => f.path === 'CLAUDE.md');
-    expect(claudeMd?.content).toContain('database-migrations');
-    expect(claudeMd?.content).toContain('Apply when writing or modifying database migrations');
+    expect(claudeMd).toBeUndefined();
   });
 
   test('generates hooks in settings.json', async () => {
@@ -90,27 +91,53 @@ describe('Claude adapter', () => {
     expect(skill?.content).toContain('Reproduce the issue');
   });
 
-  test('reports native features', async () => {
+  test('generates agent files with frontmatter', async () => {
+    const ir = await getFullIR();
+    const result = claudeAdapter.generate(ir);
+
+    const agentFile = result.files.find((f) => f.path === '.claude/agents/reviewer.md');
+    expect(agentFile).toBeDefined();
+    expect(agentFile?.content).toContain('---');
+    expect(agentFile?.content).toContain('description: "Use this agent for code review tasks"');
+    expect(agentFile?.content).toContain('model: sonnet');
+    expect(agentFile?.content).toContain('tools:');
+    expect(agentFile?.content).toContain('  - Read');
+    expect(agentFile?.content).toContain('  - Bash');
+    expect(agentFile?.content).toContain('code review specialist');
+  });
+
+  test('reports agents as native feature', async () => {
+    const ir = await getFullIR();
+    const result = claudeAdapter.generate(ir);
+
+    expect(result.nativeFeatures).toContain('agents');
+  });
+
+  test('reports scoped-rules as native feature', async () => {
     const ir = await getFullIR();
     const result = claudeAdapter.generate(ir);
 
     expect(result.nativeFeatures).toContain('instructions');
+    expect(result.nativeFeatures).toContain('scoped-rules');
     expect(result.nativeFeatures).toContain('hooks');
     expect(result.nativeFeatures).toContain('commands');
     expect(result.nativeFeatures).toContain('skills');
   });
 
-  test('reports degraded features for scoped rules', async () => {
+  test('reports description and manual rules as degraded', async () => {
     const ir = await getFullIR();
     const result = claudeAdapter.generate(ir);
 
-    const hasScopedDegraded = result.degradedFeatures.some((f) => f.includes('scoped-rules'));
-    expect(hasScopedDegraded).toBe(true);
+    const hasDescDegraded = result.degradedFeatures.some((f) =>
+      f.includes('description-triggered'),
+    );
+    const hasManualDegraded = result.degradedFeatures.some((f) => f.includes('manual'));
+    expect(hasDescDegraded).toBe(true);
+    expect(hasManualDegraded).toBe(true);
   });
 
   test('generates no settings.json without hooks', async () => {
-    const source = await loadAgentrc(join(FIXTURES, 'minimal'));
-    const ir = buildIR(source);
+    const ir = await getMinimalIR();
     const result = claudeAdapter.generate(ir);
 
     const settings = result.files.find((f) => f.path === '.claude/settings.json');

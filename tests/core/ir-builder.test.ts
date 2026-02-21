@@ -14,6 +14,7 @@ describe('buildIR', () => {
     expect(ir.hooks.length).toBe(2);
     expect(ir.commands.length).toBe(2);
     expect(ir.skills.length).toBe(1);
+    expect(ir.agents.length).toBe(1);
     expect(ir.targets).toHaveLength(8);
   });
 
@@ -23,7 +24,7 @@ describe('buildIR', () => {
 
     const ruleByName = (name: string) => ir.rules.find((r) => r.name === name);
 
-    // alwaysApply: true -> 'always'
+    // No scoping fields -> 'always' (default)
     const tsStrict = ruleByName('typescript-strict');
     expect(tsStrict?.scope).toBe('always');
 
@@ -37,7 +38,7 @@ describe('buildIR', () => {
     expect(dbRule?.scope).toBe('description');
     expect(dbRule?.description).toBe('Apply when writing or modifying database migrations');
 
-    // no frontmatter -> 'manual'
+    // manual: true -> 'manual'
     const codeStyle = ruleByName('code-style');
     expect(codeStyle?.scope).toBe('manual');
   });
@@ -79,6 +80,17 @@ describe('buildIR', () => {
     expect(ir.skills[0]?.content).toContain('Reproduce the issue');
   });
 
+  test('converts agents with description, model, and tools', async () => {
+    const source = await loadAgentrc(join(FIXTURES, 'full'));
+    const ir = buildIR(source);
+
+    expect(ir.agents[0]?.name).toBe('reviewer');
+    expect(ir.agents[0]?.description).toBe('Use this agent for code review tasks');
+    expect(ir.agents[0]?.model).toBe('sonnet');
+    expect(ir.agents[0]?.tools).toEqual(['Read', 'Bash']);
+    expect(ir.agents[0]?.content).toContain('code review specialist');
+  });
+
   test('passes hooks through from config', async () => {
     const source = await loadAgentrc(join(FIXTURES, 'full'));
     const ir = buildIR(source);
@@ -107,6 +119,7 @@ describe('buildIR', () => {
     expect(ir.hooks.length).toBe(0);
     expect(ir.commands.length).toBe(0);
     expect(ir.skills.length).toBe(0);
+    expect(ir.agents.length).toBe(0);
     expect(ir.targets).toEqual(['claude', 'cursor']);
   });
 });

@@ -1,18 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { join } from 'node:path';
 import { cursorAdapter } from '../../src/adapters/cursor.ts';
-import { buildIR } from '../../src/core/ir.ts';
-import { loadAgentrc } from '../../src/core/loader.ts';
-
-const FIXTURES = join(import.meta.dir, '..', 'fixtures');
-
-async function getFullIR() {
-  const source = await loadAgentrc(join(FIXTURES, 'full'));
-  return buildIR(source);
-}
+import { getFullIR } from '../helpers.ts';
 
 describe('Cursor adapter', () => {
-  test('generates RULE.md per rule in .cursor/rules/', async () => {
+  test('generates .mdc per rule in .cursor/rules/', async () => {
     const ir = await getFullIR();
     const result = cursorAdapter.generate(ir);
 
@@ -20,9 +11,13 @@ describe('Cursor adapter', () => {
       (f) => f.path.startsWith('.cursor/rules/') && !f.path.includes('agentrc-'),
     );
     expect(ruleFiles.length).toBe(4);
+    // All rule files should use .mdc extension
+    for (const f of ruleFiles) {
+      expect(f.path).toEndWith('.mdc');
+    }
   });
 
-  test('alwaysApply rule gets alwaysApply: true frontmatter', async () => {
+  test('always-on rule gets alwaysApply: true frontmatter', async () => {
     const ir = await getFullIR();
     const result = cursorAdapter.generate(ir);
 
@@ -65,22 +60,24 @@ describe('Cursor adapter', () => {
     const ir = await getFullIR();
     const result = cursorAdapter.generate(ir);
 
-    const hooksFile = result.files.find((f) => f.path === '.cursor/rules/agentrc-hooks/RULE.md');
+    const hooksFile = result.files.find((f) => f.path === '.cursor/rules/agentrc-hooks.mdc');
     expect(hooksFile).toBeDefined();
     expect(hooksFile?.content).toContain('alwaysApply: true');
     expect(hooksFile?.content).toContain('post-edit');
     expect(hooksFile?.content).toContain('pre-commit');
   });
 
-  test('degrades commands to description-triggered rule', async () => {
+  test('generates command files natively', async () => {
     const ir = await getFullIR();
     const result = cursorAdapter.generate(ir);
 
-    const cmdsFile = result.files.find((f) => f.path === '.cursor/rules/agentrc-commands/RULE.md');
-    expect(cmdsFile).toBeDefined();
-    expect(cmdsFile?.content).toContain('description:');
-    expect(cmdsFile?.content).toContain('test');
-    expect(cmdsFile?.content).toContain('review');
+    const testCmd = result.files.find((f) => f.path === '.cursor/commands/test.md');
+    expect(testCmd).toBeDefined();
+    expect(testCmd?.content).toContain('bun test');
+
+    const reviewCmd = result.files.find((f) => f.path === '.cursor/commands/review.md');
+    expect(reviewCmd).toBeDefined();
+    expect(reviewCmd?.content).toContain('Review all staged changes');
   });
 
   test('generates skill files natively', async () => {
@@ -92,13 +89,26 @@ describe('Cursor adapter', () => {
     expect(skill?.content).toContain('Reproduce the issue');
   });
 
+  test('generates agent files natively', async () => {
+    const ir = await getFullIR();
+    const result = cursorAdapter.generate(ir);
+
+    const agentFile = result.files.find((f) => f.path === '.cursor/agents/reviewer.md');
+    expect(agentFile).toBeDefined();
+    expect(agentFile?.content).toContain('description:');
+    expect(agentFile?.content).toContain('model: sonnet');
+    expect(agentFile?.content).toContain('code review specialist');
+  });
+
   test('reports native features', async () => {
     const ir = await getFullIR();
     const result = cursorAdapter.generate(ir);
 
     expect(result.nativeFeatures).toContain('instructions');
     expect(result.nativeFeatures).toContain('scoped-rules');
+    expect(result.nativeFeatures).toContain('commands');
     expect(result.nativeFeatures).toContain('skills');
+    expect(result.nativeFeatures).toContain('agents');
   });
 
   test('reports degraded features', async () => {
@@ -106,8 +116,6 @@ describe('Cursor adapter', () => {
     const result = cursorAdapter.generate(ir);
 
     const hasHooksDegraded = result.degradedFeatures.some((f) => f.includes('hooks'));
-    const hasCmdsDegraded = result.degradedFeatures.some((f) => f.includes('commands'));
     expect(hasHooksDegraded).toBe(true);
-    expect(hasCmdsDegraded).toBe(true);
   });
 });

@@ -23,7 +23,7 @@ describe('loadAgentrc', () => {
 
     // Verify frontmatter is parsed on rules
     const tsRule = source.rules.find((r) => r.name === 'typescript-strict');
-    expect(tsRule?.parsed.frontmatter.alwaysApply).toBe(true);
+    expect(tsRule?.parsed.frontmatter.alwaysApply).toBeUndefined();
     expect(tsRule?.parsed.frontmatter.priority).toBe('high');
 
     const reactRule = source.rules.find((r) => r.name === 'react-components');
@@ -46,6 +46,29 @@ describe('loadAgentrc', () => {
     expect(source.skills[0]?.name).toBe('debugging');
     expect(source.skills[0]?.description).toBe('Systematic debugging methodology');
     expect(source.skills[0]?.content).toContain('Reproduce the issue');
+
+    // Agents
+    expect(source.agents).toHaveLength(1);
+    expect(source.agents[0]?.name).toBe('reviewer');
+    expect(source.agents[0]?.parsed.frontmatter.description).toBe(
+      'Use this agent for code review tasks',
+    );
+    expect(source.agents[0]?.parsed.frontmatter.model).toBe('sonnet');
+    expect(source.agents[0]?.parsed.frontmatter.tools).toEqual(['Read', 'Bash']);
+  });
+
+  test('recursively loads skill files from subdirectories', async () => {
+    const source = await loadAgentrc(join(FIXTURES, 'full'));
+
+    const debugSkill = source.skills.find((s) => s.name === 'debugging');
+    expect(debugSkill).toBeDefined();
+
+    // Should contain the nested file with a forward-slash relative path key
+    const fileKeys = Object.keys(debugSkill?.files ?? {});
+    expect(fileKeys).toContain('references/advanced-techniques.md');
+    expect(debugSkill?.files['references/advanced-techniques.md']).toContain(
+      'Advanced Debugging Techniques',
+    );
   });
 
   test('loads minimal fixture', async () => {
@@ -57,6 +80,7 @@ describe('loadAgentrc', () => {
     expect(source.rules[0]?.name).toBe('typescript');
     expect(source.commands).toHaveLength(0);
     expect(source.skills).toHaveLength(0);
+    expect(source.agents).toHaveLength(0);
   });
 
   test('throws on missing .agentrc directory', async () => {
@@ -92,6 +116,7 @@ describe('loadAgentrc', () => {
     expect(source.rules).toEqual([]);
     expect(source.commands).toEqual([]);
     expect(source.skills).toEqual([]);
+    expect(source.agents).toEqual([]);
 
     // Cleanup
     const { rm } = await import('node:fs/promises');
@@ -114,6 +139,11 @@ describe('loadAgentrc', () => {
     for (const skill of source.skills) {
       expect(skill.sourcePath).toContain('.agentrc/skills/');
       expect(skill.sourcePath).toEndWith('SKILL.md');
+    }
+
+    for (const agent of source.agents) {
+      expect(agent.sourcePath).toContain('.agentrc/agents/');
+      expect(agent.sourcePath).toEndWith('.md');
     }
   });
 });
