@@ -1,6 +1,7 @@
-import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import chalk from 'chalk';
+import { pathExists } from '../utils.ts';
 
 export interface InitOptions {
   template?: string;
@@ -13,7 +14,6 @@ targets:
 `;
 
 const DEFAULT_RULE = `---
-alwaysApply: true
 priority: normal
 ---
 
@@ -21,15 +21,6 @@ priority: normal
 
 Add your project-wide guidelines here.
 `;
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export async function initCommand(options: InitOptions): Promise<void> {
   const rootDir = process.cwd();

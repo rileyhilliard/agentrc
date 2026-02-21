@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto';
-import { cp, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, extname, join } from 'node:path';
 import type { OutputFile } from '../adapters/adapter.ts';
+import { pathExists } from '../utils.ts';
+import { VERSION } from '../version.ts';
 
-const VERSION = '0.1.0';
 const MANIFEST_PATH = '.agentrc/.manifest.json';
 const BACKUP_DIR = '.agentrc/.backup';
 
@@ -125,15 +126,6 @@ function deepMerge(
   return result;
 }
 
-async function fileExists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 async function readFileContent(path: string): Promise<string | null> {
   try {
     return await readFile(path, 'utf-8');
@@ -149,7 +141,7 @@ async function backupFile(
   dryRun: boolean,
 ): Promise<string | null> {
   const absPath = join(rootDir, filePath);
-  const exists = await fileExists(absPath);
+  const exists = await pathExists(absPath);
   if (!exists) return null;
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');

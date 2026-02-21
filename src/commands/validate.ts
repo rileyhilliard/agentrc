@@ -18,6 +18,7 @@ export async function validateCommand(): Promise<void> {
   console.log(`  Hooks:    ${ir.hooks.length}`);
   console.log(`  Commands: ${ir.commands.length}`);
   console.log(`  Skills:   ${ir.skills.length}`);
+  console.log(`  Agents:   ${ir.agents.length}`);
   console.log(`  Targets:  ${ir.targets.length > 0 ? ir.targets.join(', ') : '(none)'}`);
 
   // Report warnings for rules with no scope
@@ -27,7 +28,7 @@ export async function validateCommand(): Promise<void> {
     for (const rule of manualRules) {
       console.log(
         chalk.yellow(
-          `  ⚠ Rule "${rule.name}" has no scope (no alwaysApply, globs, or description)`,
+          `  ⚠ Rule "${rule.name}" is manual (set via manual: true). It won't be included unless explicitly referenced.`,
         ),
       );
     }

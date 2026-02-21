@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { buildCommand } from './commands/build.ts';
 import { cleanCommand } from './commands/clean.ts';
@@ -7,16 +6,14 @@ import { initCommand } from './commands/init.ts';
 import { inspectCommand } from './commands/inspect.ts';
 import { migrateCommand } from './commands/migrate.ts';
 import { validateCommand } from './commands/validate.ts';
-
-const require = createRequire(import.meta.url);
-const pkg = require('../package.json') as { version: string };
+import { VERSION } from './version.ts';
 
 const program = new Command();
 
 program
   .name('agentrc')
   .description('Transpile .agentrc/ config into platform-native AI agent features')
-  .version(pkg.version);
+  .version(VERSION);
 
 program
   .command('build')
@@ -82,11 +79,11 @@ program
   });
 
 program
-  .command('migrate')
+  .command('migrate [source-path]')
   .description('Import existing platform config into .agentrc/')
-  .action(async () => {
+  .action(async (sourcePath?: string) => {
     try {
-      await migrateCommand();
+      await migrateCommand(sourcePath);
     } catch (err) {
       console.error(err instanceof Error ? err.message : err);
       process.exit(1);
