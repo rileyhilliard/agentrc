@@ -1,0 +1,6 @@
+version: "1"
+targets: []
+hooks:
+  - event: pre-commit
+    run: bash ${CLAUDE_PLUGIN_ROOT}/hooks/notify.sh ${CLAUDE_PLUGIN_ROOT}
+    description: Run on notification/completion
