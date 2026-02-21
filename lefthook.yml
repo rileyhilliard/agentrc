@@ -8,3 +8,6 @@ pre-commit:
     typecheck:
       glob: "*.ts"
       run: bun run typecheck
+    test:
+      glob: "*.ts"
+      run: bun test
