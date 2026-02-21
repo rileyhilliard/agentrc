@@ -51,6 +51,15 @@ describe('Copilot adapter', () => {
     expect(main?.content).toContain('debugging');
   });
 
+  test('inlines skill reference files when degrading skills', async () => {
+    const ir = await getFullIR();
+    const result = copilotAdapter.generate(ir);
+
+    const main = result.files.find((f) => f.path === '.github/copilot-instructions.md');
+    expect(main?.content).toContain('Binary Search Debugging');
+    expect(main?.content).toContain('Rubber Duck Debugging');
+  });
+
   test('reports native scoped-rules feature', async () => {
     const ir = await getFullIR();
     const result = copilotAdapter.generate(ir);

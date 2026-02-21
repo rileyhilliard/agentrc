@@ -87,6 +87,18 @@ describe('Cline adapter', () => {
     expect(conventions?.content).toContain('Reproduce the issue');
   });
 
+  test('conventions file inlines skill reference files', async () => {
+    const ir = await getFullIR();
+    const result = clineAdapter.generate(ir);
+
+    const conventions = result.files.find(
+      (f) => f.path === '.clinerules/00-agentrc-conventions.md',
+    );
+    expect(conventions).toBeDefined();
+    expect(conventions?.content).toContain('Binary Search Debugging');
+    expect(conventions?.content).toContain('Rubber Duck Debugging');
+  });
+
   test('reports correct native and degraded features', async () => {
     const ir = await getFullIR();
     const result = clineAdapter.generate(ir);

@@ -1,5 +1,6 @@
 import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
+import { inlineSkillContent } from './shared.ts';
 
 const RULE_CHAR_LIMIT = 6_000;
 const TOTAL_CHAR_LIMIT = 12_000;
@@ -82,7 +83,7 @@ export const windsurfAdapter: Adapter = {
           conventionSections.push(skill.description);
           conventionSections.push('');
         }
-        conventionSections.push(skill.content);
+        conventionSections.push(inlineSkillContent(skill));
         conventionSections.push('');
       }
     }

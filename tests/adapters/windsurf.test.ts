@@ -121,4 +121,14 @@ describe('Windsurf adapter', () => {
     const hasHooksDegraded = result.degradedFeatures.some((f) => f.includes('hooks'));
     expect(hasHooksDegraded).toBe(false);
   });
+
+  test('conventions file inlines skill reference files', async () => {
+    const ir = await getFullIR();
+    const result = windsurfAdapter.generate(ir);
+
+    const convFile = result.files.find((f) => f.path === '.windsurf/rules/agentrc-conventions.md');
+    expect(convFile).toBeDefined();
+    expect(convFile?.content).toContain('Binary Search Debugging');
+    expect(convFile?.content).toContain('Rubber Duck Debugging');
+  });
 });

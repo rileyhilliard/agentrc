@@ -62,6 +62,17 @@ describe('Codex adapter', () => {
     expect(skillFile?.content).toContain('Reproduce the issue');
   });
 
+  test('preserves skill reference files as separate files (progressive disclosure)', async () => {
+    const ir = await getFullIR();
+    const result = codexAdapter.generate(ir);
+
+    const refFile = result.files.find(
+      (f) => f.path === '.agents/skills/debugging/references/advanced-techniques.md',
+    );
+    expect(refFile).toBeDefined();
+    expect(refFile?.content).toContain('Binary Search Debugging');
+  });
+
   test('reports correct native and degraded features', async () => {
     const ir = await getFullIR();
     const result = codexAdapter.generate(ir);

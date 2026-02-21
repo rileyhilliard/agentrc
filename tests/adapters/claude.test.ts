@@ -91,6 +91,21 @@ describe('Claude adapter', () => {
     expect(skill?.content).toContain('Reproduce the issue');
   });
 
+  test('preserves skill reference files as separate files (progressive disclosure)', async () => {
+    const ir = await getFullIR();
+    const result = claudeAdapter.generate(ir);
+
+    const refFile = result.files.find(
+      (f) => f.path === '.claude/skills/debugging/references/advanced-techniques.md',
+    );
+    expect(refFile).toBeDefined();
+    expect(refFile?.content).toContain('Binary Search Debugging');
+
+    // Main SKILL.md should NOT have reference content inlined
+    const skill = result.files.find((f) => f.path === '.claude/skills/debugging/SKILL.md');
+    expect(skill?.content).not.toContain('Binary Search Debugging');
+  });
+
   test('generates agent files with frontmatter', async () => {
     const ir = await getFullIR();
     const result = claudeAdapter.generate(ir);

@@ -1,5 +1,6 @@
 import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
+import { inlineSkillContent } from './shared.ts';
 
 /**
  * Cline adapter.
@@ -54,7 +55,7 @@ export const clineAdapter: Adapter = {
           conventionSections.push(skill.description);
           conventionSections.push('');
         }
-        conventionSections.push(skill.content);
+        conventionSections.push(inlineSkillContent(skill));
         conventionSections.push('');
       }
     }

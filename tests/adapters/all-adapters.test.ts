@@ -83,6 +83,31 @@ describe('All adapters', () => {
     }
   });
 
+  test('no adapter silently drops skill reference files', async () => {
+    const ir = await getFullIR();
+    const adapterNames = listAdapters();
+
+    // The fixture debugging skill has references/advanced-techniques.md
+    const skillWithRefs = ir.skills.find((s) => Object.keys(s.files).length > 0);
+    if (!skillWithRefs) return;
+
+    for (const name of adapterNames) {
+      const adapter = getAdapter(name);
+      const result = adapter.generate(ir);
+
+      // Either the reference is a separate file (progressive disclosure)
+      // or its content is inlined into another file
+      const refAsSeparateFile = result.files.some((f) =>
+        Object.keys(skillWithRefs.files).some((refPath) => f.path.includes(refPath)),
+      );
+      const refContentInlined = result.files.some((f) =>
+        f.content.includes('Binary Search Debugging'),
+      );
+
+      expect(refAsSeparateFile || refContentInlined).toBe(true);
+    }
+  });
+
   test('every adapter result has valid AdapterResult shape', async () => {
     const ir = await getFullIR();
     const adapterNames = listAdapters();

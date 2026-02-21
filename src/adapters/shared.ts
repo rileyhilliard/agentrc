@@ -13,7 +13,24 @@ export function renderDescriptionRule(rule: Rule): string {
   return `### ${rule.name}${desc}\n\n${rule.content}`;
 }
 
-/** Render skills as a section */
+/**
+ * Inline a skill's reference files into its main content.
+ * For platforms that don't support progressive disclosure (separate reference files),
+ * this appends each supporting file's content after the main SKILL.md content
+ * so the agent gets the full context in a single document.
+ */
+export function inlineSkillContent(skill: Skill): string {
+  const fileEntries = Object.entries(skill.files);
+  if (fileEntries.length === 0) return skill.content;
+
+  const sections = [skill.content];
+  for (const [filePath, fileContent] of fileEntries) {
+    sections.push(`<!-- ${filePath} -->\n\n${fileContent.trim()}`);
+  }
+  return sections.join('\n\n');
+}
+
+/** Render skills as a section, inlining reference files for platforms without progressive disclosure */
 export function renderSkillsSection(skills: Skill[]): string {
   if (skills.length === 0) return '';
 
@@ -25,7 +42,7 @@ export function renderSkillsSection(skills: Skill[]): string {
       lines.push(skill.description);
       lines.push('');
     }
-    lines.push(skill.content);
+    lines.push(inlineSkillContent(skill));
     lines.push('');
   }
   return lines.join('\n');
