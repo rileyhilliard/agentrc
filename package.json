@@ -10,11 +10,32 @@
     "dist",
     "schemas"
   ],
+  "description": "Transpile .agentrc/ config into platform-native AI agent instructions",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rileyhilliard/agentrc.git"
+  },
+  "homepage": "https://github.com/rileyhilliard/agentrc#readme",
+  "bugs": {
+    "url": "https://github.com/rileyhilliard/agentrc/issues"
+  },
+  "license": "MIT",
+  "keywords": [
+    "ai",
+    "agent",
+    "config",
+    "transpiler",
+    "cli",
+    "agentrc",
+    "llm"
+  ],
   "scripts": {
     "dev": "bun run src/cli.ts",
-    "build": "bun build src/cli.ts --outdir dist --target node --packages external",
+    "build": "bun run scripts/build.ts",
+    "build:binaries": "bun run scripts/build-binaries.ts",
     "prepublishOnly": "bun run build",
     "test": "bun test",
+    "test:coverage": "bun test --coverage",
     "test:watch": "bun test --watch",
     "test:update": "bun test --update-snapshots",
     "lint": "biome check .",
