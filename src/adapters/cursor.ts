@@ -11,7 +11,6 @@ import { pushSkillFiles } from './shared.ts';
  *   - Glob-scoped: `globs: "glob1,glob2"`, `alwaysApply: false`
  *   - Description-triggered: `description: "..."`, `alwaysApply: false`
  *   - Manual: no special frontmatter
- * - .cursor/rules/agentrc-hooks.mdc: degraded hooks as behavioral instructions
  * - .cursor/commands/{name}.md: one per command (native support)
  * - .cursor/agents/{name}.md: one per agent (native support)
  */
@@ -49,28 +48,6 @@ export const cursorAdapter: Adapter = {
       files.push({
         path: `.cursor/rules/${rule.name}.mdc`,
         content,
-      });
-    }
-
-    // Hooks degrade to a behavioral instructions rule
-    if (ir.hooks.length > 0) {
-      degradedFeatures.push('hooks (folded into behavioral instructions rule)');
-      const hookLines = ['# Hooks', '', 'Follow these behavioral rules for hooks:', ''];
-      for (const hook of ir.hooks) {
-        const matchInfo = hook.match ? ` on files matching \`${hook.match}\`` : '';
-        hookLines.push(`## ${hook.event}${matchInfo}`);
-        hookLines.push('');
-        hookLines.push(hook.description || `Run: \`${hook.run}\``);
-        if (hook.description && hook.run) {
-          hookLines.push('');
-          hookLines.push(`Command: \`${hook.run}\``);
-        }
-        hookLines.push('');
-      }
-
-      files.push({
-        path: '.cursor/rules/agentrc-hooks.mdc',
-        content: `---\nalwaysApply: true\n---\n\n${hookLines.join('\n').trim()}\n`,
       });
     }
 

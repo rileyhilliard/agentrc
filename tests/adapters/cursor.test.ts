@@ -56,15 +56,12 @@ describe('Cursor adapter', () => {
     expect(codeFile?.content).toContain('alwaysApply: false');
   });
 
-  test('degrades hooks to behavioral instructions rule', async () => {
+  test('omits hooks (not supported natively)', async () => {
     const ir = await getFullIR();
     const result = cursorAdapter.generate(ir);
 
     const hooksFile = result.files.find((f) => f.path === '.cursor/rules/agentrc-hooks.mdc');
-    expect(hooksFile).toBeDefined();
-    expect(hooksFile?.content).toContain('alwaysApply: true');
-    expect(hooksFile?.content).toContain('post-edit');
-    expect(hooksFile?.content).toContain('pre-commit');
+    expect(hooksFile).toBeUndefined();
   });
 
   test('generates command files natively', async () => {
@@ -111,11 +108,11 @@ describe('Cursor adapter', () => {
     expect(result.nativeFeatures).toContain('agents');
   });
 
-  test('reports degraded features', async () => {
+  test('does not report hooks as degraded', async () => {
     const ir = await getFullIR();
     const result = cursorAdapter.generate(ir);
 
     const hasHooksDegraded = result.degradedFeatures.some((f) => f.includes('hooks'));
-    expect(hasHooksDegraded).toBe(true);
+    expect(hasHooksDegraded).toBe(false);
   });
 });

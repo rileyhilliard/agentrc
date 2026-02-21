@@ -103,21 +103,22 @@ describe('Windsurf adapter', () => {
     expect(dropWarn).toContain('low-priority');
   });
 
-  test('degrades hooks into conventions file', async () => {
+  test('omits hooks from output', async () => {
     const ir = await getFullIR();
     const result = windsurfAdapter.generate(ir);
 
     const convFile = result.files.find((f) => f.path === '.windsurf/rules/agentrc-conventions.md');
-    expect(convFile).toBeDefined();
-    expect(convFile?.content).toContain('trigger: always_on');
-    expect(convFile?.content).toContain('post-edit');
+    // Conventions file may exist for skills, but should not contain hook data
+    if (convFile) {
+      expect(convFile.content).not.toContain('## Hooks');
+    }
   });
 
-  test('reports degraded features', async () => {
+  test('does not report hooks as degraded', async () => {
     const ir = await getFullIR();
     const result = windsurfAdapter.generate(ir);
 
     const hasHooksDegraded = result.degradedFeatures.some((f) => f.includes('hooks'));
-    expect(hasHooksDegraded).toBe(true);
+    expect(hasHooksDegraded).toBe(false);
   });
 });

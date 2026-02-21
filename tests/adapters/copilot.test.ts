@@ -34,13 +34,12 @@ describe('Copilot adapter', () => {
     expect(reactInstr?.content).toContain('src/components/**/*.tsx');
   });
 
-  test('degrades hooks to main instructions', async () => {
+  test('omits hooks from output', async () => {
     const ir = await getFullIR();
     const result = copilotAdapter.generate(ir);
 
     const main = result.files.find((f) => f.path === '.github/copilot-instructions.md');
-    expect(main?.content).toContain('post-edit');
-    expect(main?.content).toContain('npx prettier --write {file}');
+    expect(main?.content).not.toContain('## Hooks');
   });
 
   test('degrades skills to text', async () => {
@@ -65,7 +64,7 @@ describe('Copilot adapter', () => {
 
     const hasHooksDegraded = result.degradedFeatures.some((f) => f.includes('hooks'));
     const hasSkillsDegraded = result.degradedFeatures.some((f) => f.includes('skills'));
-    expect(hasHooksDegraded).toBe(true);
+    expect(hasHooksDegraded).toBe(false);
     expect(hasSkillsDegraded).toBe(true);
   });
 });

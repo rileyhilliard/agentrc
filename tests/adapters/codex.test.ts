@@ -44,18 +44,13 @@ describe('Codex adapter', () => {
     expect(agentsMd?.content).toContain('Apply when writing or modifying database migrations');
   });
 
-  test('hooks are folded into AGENTS.md', async () => {
+  test('hooks are omitted from AGENTS.md', async () => {
     const ir = await getFullIR();
     const result = codexAdapter.generate(ir);
 
     const agentsMd = result.files.find((f) => f.path === 'AGENTS.md');
     expect(agentsMd).toBeDefined();
-
-    const content = agentsMd?.content ?? '';
-    expect(content).toContain('post-edit');
-    expect(content).toContain('pre-commit');
-    expect(content).toContain('npx prettier --write {file}');
-    expect(content).toContain('./scripts/pre-commit-checks.sh');
+    expect(agentsMd?.content).not.toContain('## Hooks');
   });
 
   test('skills get native .agents/ directory files', async () => {
@@ -77,12 +72,10 @@ describe('Codex adapter', () => {
 
     // Degraded features
     const hasScopedDegraded = result.degradedFeatures.some((f) => f.includes('scoped-rules'));
-    const hasHooksDegraded = result.degradedFeatures.some((f) => f.includes('hooks'));
     const hasDescDegraded = result.degradedFeatures.some((f) =>
       f.includes('description-triggered'),
     );
     expect(hasScopedDegraded).toBe(true);
-    expect(hasHooksDegraded).toBe(true);
     expect(hasDescDegraded).toBe(true);
   });
 });

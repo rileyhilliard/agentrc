@@ -11,7 +11,7 @@ const TOTAL_CHAR_LIMIT = 12_000;
  * Enforces a 6,000 char limit per file and 12,000 char total.
  * Prioritizes higher-priority rules and drops low-priority ones if limits are exceeded.
  *
- * Hooks and commands degrade to a .windsurf/rules/agentrc-conventions.md file.
+ * Skills degrade to a .windsurf/rules/agentrc-conventions.md file.
  */
 export const windsurfAdapter: Adapter = {
   name: 'windsurf',
@@ -68,25 +68,8 @@ export const windsurfAdapter: Adapter = {
       nativeFeatures.push('description-triggered-rules');
     }
 
-    // Degrade hooks and commands into a conventions file
+    // Degrade skills into a conventions file
     const conventionSections: string[] = [];
-
-    if (ir.hooks.length > 0) {
-      degradedFeatures.push('hooks (folded into conventions file)');
-      conventionSections.push('## Hooks');
-      conventionSections.push('');
-      for (const hook of ir.hooks) {
-        const matchInfo = hook.match ? ` on files matching \`${hook.match}\`` : '';
-        conventionSections.push(`### ${hook.event}${matchInfo}`);
-        conventionSections.push('');
-        conventionSections.push(hook.description || `Run: \`${hook.run}\``);
-        if (hook.description && hook.run) {
-          conventionSections.push('');
-          conventionSections.push(`Command: \`${hook.run}\``);
-        }
-        conventionSections.push('');
-      }
-    }
 
     if (ir.skills.length > 0) {
       degradedFeatures.push('skills (folded into conventions file)');
@@ -110,7 +93,7 @@ export const windsurfAdapter: Adapter = {
 
       if (totalChars + convCharCount > TOTAL_CHAR_LIMIT) {
         warnings.push(
-          `Conventions file (hooks/commands/skills) would exceed Windsurf's ${TOTAL_CHAR_LIMIT}-char total limit. Some degraded content may be truncated.`,
+          `Conventions file (skills) would exceed Windsurf's ${TOTAL_CHAR_LIMIT}-char total limit. Some degraded content may be truncated.`,
         );
       }
 

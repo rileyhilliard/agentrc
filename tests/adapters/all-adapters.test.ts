@@ -40,7 +40,7 @@ describe('All adapters', () => {
     }
   });
 
-  test('no adapter silently drops hooks', async () => {
+  test('only claude adapter includes hooks in output', async () => {
     const ir = await getFullIR();
     const adapterNames = listAdapters();
 
@@ -48,15 +48,17 @@ describe('All adapters', () => {
       const adapter = getAdapter(name);
       const result = adapter.generate(ir);
 
-      // Hooks should be represented somewhere: either in files or as degraded features
       if (ir.hooks.length > 0) {
-        const hooksAppearInFiles = result.files.some((f) =>
-          ir.hooks.some((h) => f.content.includes(h.event) || f.content.includes(h.run)),
-        );
         const hooksInNative = result.nativeFeatures.some((f) => f.includes('hook'));
-        const hooksInDegraded = result.degradedFeatures.some((f) => f.includes('hook'));
 
-        expect(hooksAppearInFiles || hooksInNative || hooksInDegraded).toBe(true);
+        if (name === 'claude') {
+          // Claude should handle hooks natively
+          expect(hooksInNative).toBe(true);
+        } else {
+          // All other adapters omit hooks entirely
+          const hooksInDegraded = result.degradedFeatures.some((f) => f.includes('hook'));
+          expect(hooksInDegraded).toBe(false);
+        }
       }
     }
   });

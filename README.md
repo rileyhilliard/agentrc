@@ -136,17 +136,17 @@ See the full [configuration reference](docs/configuration.md).
 | Platform | Instructions | Scoped rules | Hooks | Commands | Skills | Agents | Output |
 |----------|:---:|:---:|:---:|:---:|:---:|:---:|---|
 | Claude Code | native | native | native | native | native | native | `.claude/` |
-| Cursor | native | native | degraded | native | native | native | `.cursor/` |
-| Copilot | native | native | degraded | - | degraded | - | `.github/` |
-| Windsurf | native | native | degraded | - | degraded | - | `.windsurf/rules/` |
-| Cline | native | native | degraded | - | degraded | - | `.clinerules/` |
-| Gemini | native | degraded | degraded | - | native | - | `GEMINI.md` + `.gemini/skills/` |
-| Codex | native | degraded | degraded | - | native | - | `AGENTS.md` + `.agents/skills/` |
-| Aider | native | degraded | degraded | - | degraded | - | `CONVENTIONS.md` |
-| Junie | native | degraded | degraded | - | degraded | - | `.junie/guidelines.md` |
-| Amazon Q | native | degraded | degraded | - | degraded | - | `.amazonq/rules/agentrc.md` |
-| Amp | native | degraded | degraded | - | degraded | - | `AGENTS.md` |
-| Roo | native | degraded | degraded | - | degraded | - | `AGENTS.md` |
+| Cursor | native | native | - | native | native | native | `.cursor/` |
+| Copilot | native | native | - | - | degraded | - | `.github/` |
+| Windsurf | native | native | - | - | degraded | - | `.windsurf/rules/` |
+| Cline | native | native | - | - | degraded | - | `.clinerules/` |
+| Gemini | native | degraded | - | - | native | - | `GEMINI.md` + `.gemini/skills/` |
+| Codex | native | degraded | - | - | native | - | `AGENTS.md` + `.agents/skills/` |
+| Aider | native | degraded | - | - | degraded | - | `CONVENTIONS.md` |
+| Junie | native | degraded | - | - | degraded | - | `.junie/guidelines.md` |
+| Amazon Q | native | degraded | - | - | degraded | - | `.amazonq/rules/agentrc.md` |
+| Amp | native | degraded | - | - | degraded | - | `AGENTS.md` |
+| Roo | native | degraded | - | - | degraded | - | `AGENTS.md` |
 
 - **native** = uses the platform's built-in mechanism.
 - **degraded** = folded into text instructions.

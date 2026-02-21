@@ -1,6 +1,6 @@
 import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
-import { renderHooksSection, renderSkillsSection } from './shared.ts';
+import { renderSkillsSection } from './shared.ts';
 
 /**
  * GitHub Copilot adapter.
@@ -8,7 +8,7 @@ import { renderHooksSection, renderSkillsSection } from './shared.ts';
  * Generates:
  * - .github/copilot-instructions.md: all alwaysApply rules by priority
  * - .github/instructions/{name}.instructions.md: glob-scoped rules with applyTo frontmatter
- * - Hooks, commands, and skills all degrade to text in copilot-instructions.md
+ * - Skills degrade to text in copilot-instructions.md
  */
 export const copilotAdapter: Adapter = {
   name: 'copilot',
@@ -46,12 +46,6 @@ export const copilotAdapter: Adapter = {
     for (const rule of descRules) {
       const desc = rule.description ? ` (${rule.description})` : '';
       mainSections.push(`### ${rule.name}${desc}\n\n${rule.content}`);
-    }
-
-    // Hooks degrade to text
-    if (ir.hooks.length > 0) {
-      degradedFeatures.push('hooks (folded into behavioral instructions)');
-      mainSections.push(renderHooksSection(ir.hooks));
     }
 
     // Skills degrade to text

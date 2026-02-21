@@ -1,15 +1,10 @@
 import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
-import {
-  renderDescriptionRule,
-  renderGlobRule,
-  renderHooksSection,
-  renderSkillsSection,
-} from './shared.ts';
+import { renderDescriptionRule, renderGlobRule, renderSkillsSection } from './shared.ts';
 
 /**
  * Factory for generic markdown adapters.
- * These produce a single markdown file with all rules, hooks, and skills folded in.
+ * These produce a single markdown file with all rules and skills folded in.
  */
 export function createGenericAdapter(name: string, outputPath: string): Adapter {
   return {
@@ -46,12 +41,6 @@ export function createGenericAdapter(name: string, outputPath: string): Adapter 
       }
       for (const rule of descRules) {
         sections.push(renderDescriptionRule(rule));
-      }
-
-      // Hooks
-      if (ir.hooks.length > 0) {
-        degradedFeatures.push('hooks (folded into behavioral instructions)');
-        sections.push(renderHooksSection(ir.hooks));
       }
 
       // Skills

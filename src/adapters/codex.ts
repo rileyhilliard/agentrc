@@ -1,11 +1,6 @@
 import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
-import {
-  pushSkillFiles,
-  renderDescriptionRule,
-  renderGlobRule,
-  renderHooksSection,
-} from './shared.ts';
+import { pushSkillFiles, renderDescriptionRule, renderGlobRule } from './shared.ts';
 
 /**
  * Codex (OpenAI) adapter.
@@ -13,7 +8,7 @@ import {
  * Generates:
  * - AGENTS.md with all rules (glob-scoped get file-path annotations)
  * - .agents/skills/{name}/SKILL.md for each skill
- * - Hooks degrade to text in AGENTS.md
+ * - Hooks are omitted (not supported by Codex)
  */
 export const codexAdapter: Adapter = {
   name: 'codex',
@@ -47,12 +42,6 @@ export const codexAdapter: Adapter = {
     }
     for (const rule of descRules) {
       sections.push(renderDescriptionRule(rule));
-    }
-
-    // Hooks degrade to text
-    if (ir.hooks.length > 0) {
-      degradedFeatures.push('hooks (folded into behavioral instructions)');
-      sections.push(renderHooksSection(ir.hooks));
     }
 
     const content = `${sections.join('\n\n').trim()}\n`;

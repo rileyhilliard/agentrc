@@ -53,7 +53,7 @@ describe('Cline adapter', () => {
     }
   });
 
-  test('generates 00-agentrc-conventions.md when hooks/skills exist', async () => {
+  test('generates 00-agentrc-conventions.md when skills exist', async () => {
     const ir = await getFullIR();
     const result = clineAdapter.generate(ir);
 
@@ -63,18 +63,16 @@ describe('Cline adapter', () => {
     expect(conventions).toBeDefined();
   });
 
-  test('conventions file contains hook events and run commands', async () => {
+  test('conventions file does not contain hooks', async () => {
     const ir = await getFullIR();
     const result = clineAdapter.generate(ir);
 
     const conventions = result.files.find(
       (f) => f.path === '.clinerules/00-agentrc-conventions.md',
     );
-    expect(conventions).toBeDefined();
-    expect(conventions?.content).toContain('post-edit');
-    expect(conventions?.content).toContain('pre-commit');
-    expect(conventions?.content).toContain('npx prettier --write {file}');
-    expect(conventions?.content).toContain('./scripts/pre-commit-checks.sh');
+    if (conventions) {
+      expect(conventions.content).not.toContain('## Hooks');
+    }
   });
 
   test('conventions file contains skill content', async () => {
@@ -97,10 +95,10 @@ describe('Cline adapter', () => {
     expect(result.nativeFeatures).toContain('instructions');
     expect(result.nativeFeatures).toContain('scoped-rules');
 
-    // Degraded features
+    // Degraded features (hooks are omitted, not degraded)
     const hasHooksDegraded = result.degradedFeatures.some((f) => f.includes('hooks'));
     const hasSkillsDegraded = result.degradedFeatures.some((f) => f.includes('skills'));
-    expect(hasHooksDegraded).toBe(true);
+    expect(hasHooksDegraded).toBe(false);
     expect(hasSkillsDegraded).toBe(true);
   });
 });

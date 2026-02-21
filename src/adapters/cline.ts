@@ -8,7 +8,7 @@ import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
  * - .clinerules/{NN}-{name}.md: rule files with numeric prefixes for priority ordering
  *   - Glob-scoped rules use `paths` frontmatter
  *   - Rules without globs have no frontmatter (always active)
- * - .clinerules/00-agentrc-conventions.md: degraded hooks and skills
+ * - .clinerules/00-agentrc-conventions.md: degraded skills
  */
 export const clineAdapter: Adapter = {
   name: 'cline',
@@ -40,25 +40,8 @@ export const clineAdapter: Adapter = {
       index++;
     }
 
-    // Degrade hooks and commands into a conventions file
+    // Degrade skills into a conventions file
     const conventionSections: string[] = [];
-
-    if (ir.hooks.length > 0) {
-      degradedFeatures.push('hooks (folded into conventions file)');
-      conventionSections.push('## Hooks');
-      conventionSections.push('');
-      for (const hook of ir.hooks) {
-        const matchInfo = hook.match ? ` on files matching \`${hook.match}\`` : '';
-        conventionSections.push(`### ${hook.event}${matchInfo}`);
-        conventionSections.push('');
-        conventionSections.push(hook.description || `Run: \`${hook.run}\``);
-        if (hook.description && hook.run) {
-          conventionSections.push('');
-          conventionSections.push(`Command: \`${hook.run}\``);
-        }
-        conventionSections.push('');
-      }
-    }
 
     if (ir.skills.length > 0) {
       degradedFeatures.push('skills (folded into conventions file)');

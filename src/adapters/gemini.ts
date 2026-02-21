@@ -1,17 +1,12 @@
 import type { IR } from '../core/ir.ts';
 import type { Adapter, AdapterResult, OutputFile } from './adapter.ts';
-import {
-  pushSkillFiles,
-  renderDescriptionRule,
-  renderGlobRule,
-  renderHooksSection,
-} from './shared.ts';
+import { pushSkillFiles, renderDescriptionRule, renderGlobRule } from './shared.ts';
 
 /**
  * Gemini CLI adapter.
  *
  * Generates:
- * - GEMINI.md: rules, hooks, and commands as markdown
+ * - GEMINI.md: rules and commands as markdown
  * - .gemini/skills/{name}/SKILL.md: native skill files (Agent Skills open standard)
  */
 export const geminiAdapter: Adapter = {
@@ -46,12 +41,6 @@ export const geminiAdapter: Adapter = {
     }
     for (const rule of descRules) {
       sections.push(renderDescriptionRule(rule));
-    }
-
-    // Hooks become behavioral instructions
-    if (ir.hooks.length > 0) {
-      degradedFeatures.push('hooks (folded into behavioral instructions)');
-      sections.push(renderHooksSection(ir.hooks));
     }
 
     // Skills get native support as .gemini/skills/{name}/SKILL.md
