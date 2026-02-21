@@ -1,0 +1,18 @@
+version: "1"
+targets:
+  - claude
+  - cursor
+  - copilot
+  - windsurf
+  - cline
+  - gemini
+  - codex
+  - generic-markdown
+hooks:
+  - event: post-edit
+    match: "**/*.{ts,tsx}"
+    run: "npx prettier --write {file}"
+    description: "Auto-format TypeScript files after edit"
+  - event: pre-commit
+    run: "./scripts/pre-commit-checks.sh"
+    description: "Lint and typecheck before committing"

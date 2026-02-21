@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentrc.dev/schemas/v1/config.json",
+  "title": "agentrc config",
+  "description": "Configuration for the agentrc transpiler",
+  "type": "object",
+  "required": ["version"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "enum": ["1"],
+      "description": "Schema version"
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "claude",
+          "cursor",
+          "copilot",
+          "windsurf",
+          "cline",
+          "gemini",
+          "codex",
+          "aider",
+          "junie",
+          "amazonq",
+          "amp",
+          "roo",
+          "generic-markdown"
+        ]
+      },
+      "description": "Target platforms to generate config for"
+    },
+    "hooks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["event", "run", "description"],
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": ["post-edit", "pre-commit", "post-create"]
+          },
+          "match": {
+            "type": "string",
+            "description": "Glob pattern for file matching"
+          },
+          "run": {
+            "type": "string",
+            "description": "Command to run"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
