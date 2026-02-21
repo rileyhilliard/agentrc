@@ -18,17 +18,16 @@ export const copilotAdapter: Adapter = {
     const nativeFeatures: string[] = ['instructions', 'scoped-rules'];
     const degradedFeatures: string[] = [];
 
-    const sorted = ir.rules;
     const mainSections: string[] = [];
 
     // Always-apply rules go into copilot-instructions.md
-    const alwaysRules = sorted.filter((r) => r.scope === 'always' || r.scope === 'manual');
+    const alwaysRules = ir.rules.filter((r) => r.scope === 'always' || r.scope === 'manual');
     for (const rule of alwaysRules) {
       mainSections.push(`### ${rule.name}\n\n${rule.content}`);
     }
 
     // Glob-scoped rules get their own .instructions.md files with applyTo frontmatter
-    const globRules = sorted.filter((r) => r.scope === 'glob');
+    const globRules = ir.rules.filter((r) => r.scope === 'glob');
     for (const rule of globRules) {
       const globStr = rule.globs?.join(',') ?? '';
       const frontmatter = `---\napplyTo: "${globStr}"\n---`;
@@ -40,7 +39,7 @@ export const copilotAdapter: Adapter = {
     }
 
     // Description-triggered rules degrade to main instructions
-    const descRules = sorted.filter((r) => r.scope === 'description');
+    const descRules = ir.rules.filter((r) => r.scope === 'description');
     if (descRules.length > 0) {
       degradedFeatures.push('description-triggered rules (folded into instructions)');
     }

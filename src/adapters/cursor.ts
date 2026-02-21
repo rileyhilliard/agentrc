@@ -23,9 +23,7 @@ export const cursorAdapter: Adapter = {
     const nativeFeatures: string[] = ['instructions', 'scoped-rules'];
     const degradedFeatures: string[] = [];
 
-    const sorted = ir.rules;
-
-    for (const rule of sorted) {
+    for (const rule of ir.rules) {
       let frontmatter: string;
 
       switch (rule.scope) {

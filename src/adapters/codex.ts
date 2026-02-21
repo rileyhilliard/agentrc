@@ -24,16 +24,15 @@ export const codexAdapter: Adapter = {
     const degradedFeatures: string[] = [];
 
     const sections: string[] = [];
-    const sorted = ir.rules;
 
     // Always-apply and manual rules
-    const alwaysRules = sorted.filter((r) => r.scope === 'always' || r.scope === 'manual');
+    const alwaysRules = ir.rules.filter((r) => r.scope === 'always' || r.scope === 'manual');
     for (const rule of alwaysRules) {
       sections.push(`### ${rule.name}\n\n${rule.content}`);
     }
 
     // Glob-scoped rules with file-path annotations
-    const globRules = sorted.filter((r) => r.scope === 'glob');
+    const globRules = ir.rules.filter((r) => r.scope === 'glob');
     if (globRules.length > 0) {
       degradedFeatures.push('scoped-rules (folded into instructions with file-path annotations)');
     }
@@ -42,7 +41,7 @@ export const codexAdapter: Adapter = {
     }
 
     // Description-triggered rules
-    const descRules = sorted.filter((r) => r.scope === 'description');
+    const descRules = ir.rules.filter((r) => r.scope === 'description');
     if (descRules.length > 0) {
       degradedFeatures.push('description-triggered rules (folded into instructions)');
     }

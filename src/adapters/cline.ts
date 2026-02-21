@@ -18,11 +18,9 @@ export const clineAdapter: Adapter = {
     const nativeFeatures: string[] = ['instructions', 'scoped-rules'];
     const degradedFeatures: string[] = [];
 
-    const sorted = ir.rules;
-
     // Assign numeric prefixes starting at 01 (00 reserved for conventions)
     let index = 1;
-    for (const rule of sorted) {
+    for (const rule of ir.rules) {
       const prefix = String(index).padStart(2, '0');
       let content: string;
 

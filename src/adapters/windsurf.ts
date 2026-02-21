@@ -21,10 +21,9 @@ export const windsurfAdapter: Adapter = {
     const nativeFeatures: string[] = ['instructions', 'scoped-rules'];
     const degradedFeatures: string[] = [];
 
-    const sorted = ir.rules;
     let totalChars = 0;
 
-    for (const rule of sorted) {
+    for (const rule of ir.rules) {
       let frontmatter: string;
 
       if (rule.scope === 'glob' && rule.globs && rule.globs.length > 0) {
@@ -64,7 +63,7 @@ export const windsurfAdapter: Adapter = {
     }
 
     // Description-triggered rules use trigger: model natively
-    const descRules = sorted.filter((r) => r.scope === 'description');
+    const descRules = ir.rules.filter((r) => r.scope === 'description');
     if (descRules.length > 0) {
       nativeFeatures.push('description-triggered-rules');
     }

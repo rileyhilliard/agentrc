@@ -85,24 +85,22 @@ export const claudeAdapter: Adapter = {
     const degradedFeatures: string[] = [];
 
     // --- .claude/rules/*.md ---
-    const sorted = ir.rules;
-
-    const hasGlobRules = sorted.some((r) => r.scope === 'glob');
+    const hasGlobRules = ir.rules.some((r) => r.scope === 'glob');
     if (hasGlobRules) {
       nativeFeatures.push('scoped-rules');
     }
 
-    const hasDescRules = sorted.some((r) => r.scope === 'description');
+    const hasDescRules = ir.rules.some((r) => r.scope === 'description');
     if (hasDescRules) {
       degradedFeatures.push('description-triggered rules (converted to always-on rules)');
     }
 
-    const hasManualRules = sorted.some((r) => r.scope === 'manual');
+    const hasManualRules = ir.rules.some((r) => r.scope === 'manual');
     if (hasManualRules) {
       degradedFeatures.push('manual rules (converted to always-on rules)');
     }
 
-    for (const rule of sorted) {
+    for (const rule of ir.rules) {
       let content: string;
 
       if (rule.scope === 'glob' && rule.globs && rule.globs.length > 0) {

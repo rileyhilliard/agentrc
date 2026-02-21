@@ -22,17 +22,14 @@ export function createGenericAdapter(name: string, outputPath: string): Adapter 
 
       const sections: string[] = [];
 
-      // Rules sorted by priority
-      const sorted = ir.rules;
-
       // Always-apply and manual rules first
-      const alwaysRules = sorted.filter((r) => r.scope === 'always' || r.scope === 'manual');
+      const alwaysRules = ir.rules.filter((r) => r.scope === 'always' || r.scope === 'manual');
       for (const rule of alwaysRules) {
         sections.push(`### ${rule.name}\n\n${rule.content}`);
       }
 
       // Glob-scoped rules with file-match annotation
-      const globRules = sorted.filter((r) => r.scope === 'glob');
+      const globRules = ir.rules.filter((r) => r.scope === 'glob');
       if (globRules.length > 0) {
         degradedFeatures.push(
           'scoped-rules (folded into instructions with file-match annotations)',
@@ -43,7 +40,7 @@ export function createGenericAdapter(name: string, outputPath: string): Adapter 
       }
 
       // Description-triggered rules
-      const descRules = sorted.filter((r) => r.scope === 'description');
+      const descRules = ir.rules.filter((r) => r.scope === 'description');
       if (descRules.length > 0) {
         degradedFeatures.push('description-triggered rules (folded into instructions)');
       }
