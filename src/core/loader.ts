@@ -1,5 +1,6 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import { basename, join, relative } from 'node:path';
+import { isDirectory } from '../utils.ts';
 import type { AgentrcConfig } from './config.ts';
 import { parseConfig } from './config.ts';
 import type { ParsedMarkdown } from './frontmatter.ts';
@@ -16,16 +17,7 @@ export interface LoadedSource {
     files: Record<string, string>;
     sourcePath: string;
   }>;
-}
-
-/** Check whether a path exists and is a directory. */
-async function isDirectory(path: string): Promise<boolean> {
-  try {
-    const s = await stat(path);
-    return s.isDirectory();
-  } catch {
-    return false;
-  }
+  agents: Array<{ name: string; parsed: ParsedMarkdown; sourcePath: string }>;
 }
 
 /** Read all .md files from a directory, returning parsed results. */
@@ -48,6 +40,78 @@ async function loadMarkdownFiles(
   }
 
   return results;
+}
+
+/** File extensions to skip when collecting skill supporting files. */
+const SKIP_EXTENSIONS = new Set([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.bmp',
+  '.ico',
+  '.webp',
+  '.svg',
+  '.woff',
+  '.woff2',
+  '.ttf',
+  '.eot',
+  '.otf',
+  '.zip',
+  '.tar',
+  '.gz',
+  '.bz2',
+  '.7z',
+  '.rar',
+  '.exe',
+  '.dll',
+  '.so',
+  '.dylib',
+  '.bin',
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.xls',
+  '.xlsx',
+  '.mp3',
+  '.mp4',
+  '.wav',
+  '.avi',
+  '.mov',
+]);
+
+/** Names to always skip when walking skill directories. */
+const SKIP_NAMES = new Set(['SKILL.md', '.DS_Store']);
+
+/**
+ * Recursively collect text files from a skill directory into a Record
+ * keyed by posix-style relative paths (e.g. "references/advanced-techniques.md").
+ */
+async function collectSkillFiles(
+  baseDir: string,
+  currentDir: string,
+  files: Record<string, string>,
+): Promise<void> {
+  const entries = await readdir(currentDir);
+
+  for (const entry of entries) {
+    if (SKIP_NAMES.has(entry)) continue;
+
+    const entryPath = join(currentDir, entry);
+    const entryStat = await stat(entryPath);
+
+    if (entryStat.isDirectory()) {
+      await collectSkillFiles(baseDir, entryPath, files);
+    } else if (entryStat.isFile()) {
+      // Skip binary files based on extension
+      const ext = entry.slice(entry.lastIndexOf('.')).toLowerCase();
+      if (ext && SKIP_EXTENSIONS.has(ext)) continue;
+
+      // Use forward-slash relative paths as keys
+      const relPath = relative(baseDir, entryPath).split('\\').join('/');
+      files[relPath] = await readFile(entryPath, 'utf-8');
+    }
+  }
 }
 
 /** Load a single skill directory. Expects SKILL.md as the main file. */
@@ -73,18 +137,9 @@ async function loadSkill(
 
   const { frontmatter, content } = parseFrontmatter(skillRaw);
 
-  // Read any other files in the skill directory as supporting files
-  const entries = await readdir(skillDir);
+  // Recursively read all supporting files in the skill directory
   const files: Record<string, string> = {};
-
-  for (const entry of entries) {
-    if (entry === 'SKILL.md') continue;
-    const entryPath = join(skillDir, entry);
-    const entryStat = await stat(entryPath);
-    if (entryStat.isFile()) {
-      files[entry] = await readFile(entryPath, 'utf-8');
-    }
-  }
+  await collectSkillFiles(skillDir, skillDir, files);
 
   return {
     name: skillName,
@@ -138,5 +193,8 @@ export async function loadAgentrc(rootDir: string): Promise<LoadedSource> {
     }
   }
 
-  return { config, rules, commands, skills };
+  // Load agents/*.md
+  const agents = await loadMarkdownFiles(join(agentrcDir, 'agents'));
+
+  return { config, rules, commands, skills, agents };
 }

@@ -12,6 +12,7 @@ export interface Rule {
   globs?: string[];
   description?: string;
   alwaysApply?: boolean;
+  manual?: boolean;
   priority: Priority;
   sourcePath: string;
 }
@@ -39,11 +40,21 @@ export interface Skill {
   sourcePath: string;
 }
 
+export interface Agent {
+  name: string;
+  description: string;
+  content: string;
+  model?: string;
+  tools?: string[];
+  sourcePath: string;
+}
+
 export interface IR {
   rules: Rule[];
   hooks: Hook[];
   commands: AgentCommand[];
   skills: Skill[];
+  agents: Agent[];
   targets: string[];
 }
 
@@ -54,21 +65,36 @@ const priorityOrder: Record<Priority, number> = {
   low: 3,
 };
 
+/** Sort rules by priority: critical -> high -> normal -> low */
+export function sortByPriority(rules: Rule[]): Rule[] {
+  return [...rules].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+}
+
 function determineScope(frontmatter: {
   alwaysApply?: boolean;
+  manual?: boolean;
   globs?: string[];
   description?: string;
 }): RuleScope {
-  if (frontmatter.alwaysApply) return 'always';
+  // Explicit overrides (alwaysApply kept for backwards compat)
+  if (frontmatter.alwaysApply === true) return 'always';
+  if (frontmatter.manual === true) return 'manual';
+
+  // Scoping fields
   if (frontmatter.globs && frontmatter.globs.length > 0) return 'glob';
   if (frontmatter.description) return 'description';
-  return 'manual';
+
+  // Backwards compat: explicit alwaysApply: false with no scoping = manual
+  if (frontmatter.alwaysApply === false) return 'manual';
+
+  // Default: a rule with no scoping is always-on
+  return 'always';
 }
 
 export function buildIR(source: LoadedSource): IR {
-  // Convert loaded rules to IR Rules
-  const rules: Rule[] = source.rules
-    .map((r) => {
+  // Convert loaded rules to IR Rules, sorted by priority
+  const rules: Rule[] = sortByPriority(
+    source.rules.map((r) => {
       const fm = r.parsed.frontmatter;
       const rule: Rule = {
         name: r.name,
@@ -87,10 +113,13 @@ export function buildIR(source: LoadedSource): IR {
       if (fm.alwaysApply !== undefined) {
         rule.alwaysApply = fm.alwaysApply;
       }
+      if (fm.manual !== undefined) {
+        rule.manual = fm.manual;
+      }
 
       return rule;
-    })
-    .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    }),
+  );
 
   // Convert config hooks to IR Hooks (direct mapping)
   const hooks: Hook[] = source.config.hooks;
@@ -113,11 +142,29 @@ export function buildIR(source: LoadedSource): IR {
     sourcePath: s.sourcePath,
   }));
 
+  // Convert loaded agents to IR Agents
+  const agents: Agent[] = source.agents.map((a) => {
+    const agent: Agent = {
+      name: a.name,
+      description: a.parsed.frontmatter.description ?? '',
+      content: a.parsed.content,
+      sourcePath: a.sourcePath,
+    };
+    if (a.parsed.frontmatter.model !== undefined) {
+      agent.model = a.parsed.frontmatter.model;
+    }
+    if (a.parsed.frontmatter.tools !== undefined) {
+      agent.tools = a.parsed.frontmatter.tools;
+    }
+    return agent;
+  });
+
   return {
     rules,
     hooks,
     commands,
     skills,
+    agents,
     targets: source.config.targets,
   };
 }

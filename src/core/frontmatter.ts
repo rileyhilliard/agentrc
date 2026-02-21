@@ -3,9 +3,12 @@ import matter from 'gray-matter';
 export interface ParsedFrontmatter {
   globs?: string[];
   alwaysApply?: boolean;
+  manual?: boolean;
   description?: string;
   priority?: 'critical' | 'high' | 'normal' | 'low';
   aliases?: string[];
+  model?: string;
+  tools?: string[];
 }
 
 export interface ParsedMarkdown {
@@ -27,6 +30,10 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
     frontmatter.alwaysApply = Boolean(data.alwaysApply);
   }
 
+  if (data.manual !== undefined) {
+    frontmatter.manual = Boolean(data.manual);
+  }
+
   if (data.description !== undefined) {
     frontmatter.description = String(data.description);
   }
@@ -41,6 +48,14 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
 
   if (data.aliases !== undefined) {
     frontmatter.aliases = Array.isArray(data.aliases) ? data.aliases : [data.aliases];
+  }
+
+  if (data.model !== undefined) {
+    frontmatter.model = String(data.model);
+  }
+
+  if (data.tools !== undefined) {
+    frontmatter.tools = Array.isArray(data.tools) ? data.tools : [data.tools];
   }
 
   return {
