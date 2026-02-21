@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { buildCommand } from './commands/build.ts';
 import { cleanCommand } from './commands/clean.ts';
@@ -7,12 +8,15 @@ import { inspectCommand } from './commands/inspect.ts';
 import { migrateCommand } from './commands/migrate.ts';
 import { validateCommand } from './commands/validate.ts';
 
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json') as { version: string };
+
 const program = new Command();
 
 program
   .name('agentrc')
   .description('Transpile .agentrc/ config into platform-native AI agent features')
-  .version('0.1.0');
+  .version(pkg.version);
 
 program
   .command('build')
